@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Port Control Center - Tanjung Priok</title>
-    
+
     <!-- Tailwind CSS for rapid styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
     <!-- Leaflet CSS for Maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
         body {
             font-family: 'Urbanist', sans-serif;
-            background-color: #040814; /* Deep dark blue background */
+            background-color: #040814;
+            /* Deep dark blue background */
             color: #F8FAFC;
         }
 
@@ -32,26 +36,30 @@
         ::-webkit-scrollbar {
             width: 8px;
         }
+
         ::-webkit-scrollbar-track {
-            background: #0f172a; 
+            background: #0f172a;
         }
+
         ::-webkit-scrollbar-thumb {
-            background: #334155; 
+            background: #334155;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569; 
+            background: #475569;
         }
 
         /* Map styling to fit dark theme */
         #map {
             background-color: #040814;
         }
-        
+
         .leaflet-container .leaflet-control-attribution {
             background: rgba(0, 0, 0, 0.7);
             color: #cbd5e1;
         }
+
         .leaflet-container .leaflet-control-attribution a {
             color: #38bdf8;
         }
@@ -64,7 +72,8 @@
             width: 32px;
             height: 32px;
             background-color: rgba(15, 23, 42, 0.8);
-            border: 2px solid #38bdf8; /* Neon Blue default */
+            border: 2px solid #38bdf8;
+            /* Neon Blue default */
             border-radius: 50%;
             color: #38bdf8;
             font-size: 14px;
@@ -84,8 +93,9 @@
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
             animation: pulse-danger 1.5s infinite;
         }
-        
-        .custom-ship-marker:hover, .custom-ship-marker.selected {
+
+        .custom-ship-marker:hover,
+        .custom-ship-marker.selected {
             transform: scale(1.2);
             background-color: #38bdf8;
             color: #040814;
@@ -93,9 +103,17 @@
         }
 
         @keyframes pulse-danger {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
         }
 
         /* AI Bounding Box Animation */
@@ -108,11 +126,19 @@
         }
 
         @keyframes scan {
-            0% { opacity: 0.5; transform: scale(0.98); }
-            100% { opacity: 1; transform: scale(1.02); }
+            0% {
+                opacity: 0.5;
+                transform: scale(0.98);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
         }
     </style>
 </head>
+
 <body class="h-screen w-screen flex overflow-hidden selection:bg-sky-500/30">
 
     <!-- Sidebar Navigation -->
@@ -123,19 +149,27 @@
         <nav class="flex flex-col gap-6 w-full">
             <button class="w-full py-3 text-sky-400 border-r-2 border-sky-400 bg-slate-800/50 relative group">
                 <i class="fa-solid fa-satellite-dish text-xl"></i>
-                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Live Map</span>
+                <span
+                    class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Live
+                    Map</span>
             </button>
             <button class="w-full py-3 text-slate-400 hover:text-sky-300 transition-colors relative group">
                 <i class="fa-solid fa-video text-xl"></i>
-                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">CCTV & AI</span>
+                <span
+                    class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">CCTV
+                    & AI</span>
             </button>
             <button class="w-full py-3 text-slate-400 hover:text-sky-300 transition-colors relative group">
                 <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
-                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Auto Billing</span>
+                <span
+                    class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Auto
+                    Billing</span>
             </button>
             <button class="w-full py-3 text-slate-400 hover:text-sky-300 transition-colors relative group">
                 <i class="fa-solid fa-user-astronaut text-xl"></i>
-                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Pilot Tracker</span>
+                <span
+                    class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Pilot
+                    Tracker</span>
             </button>
         </nav>
         <div class="mt-auto">
@@ -150,13 +184,17 @@
         <!-- Top Header Overlay (Absolute over map) -->
         <header class="absolute top-4 left-4 right-4 z-[400] flex justify-between items-start pointer-events-none">
             <!-- Port Info -->
-            <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-4 rounded-xl shadow-lg pointer-events-auto">
-                <h1 class="text-2xl font-bold text-white tracking-wide">Tanjung Priok <span class="text-sky-400 font-light">Control Center</span></h1>
-                <p class="text-sm text-slate-400 mt-1"><i class="fa-solid fa-location-dot mr-2"></i>Jakarta, ID | <span class="font-mono-custom text-emerald-400 text-xs">SYS_ONLINE</span></p>
+            <div
+                class="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-4 rounded-xl shadow-lg pointer-events-auto">
+                <h1 class="text-2xl font-bold text-white tracking-wide">Tanjung Priok <span
+                        class="text-sky-400 font-light">Control Center</span></h1>
+                <p class="text-sm text-slate-400 mt-1"><i class="fa-solid fa-location-dot mr-2"></i>Jakarta, ID | <span
+                        class="font-mono-custom text-emerald-400 text-xs">SYS_ONLINE</span></p>
             </div>
 
             <!-- Global IoT Metrics -->
-            <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-3 rounded-xl shadow-lg flex gap-6 pointer-events-auto">
+            <div
+                class="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-3 rounded-xl shadow-lg flex gap-6 pointer-events-auto">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-sky-900/50 flex items-center justify-center text-sky-400">
                         <i class="fa-solid fa-water"></i>
@@ -164,8 +202,9 @@
                     <div>
                         <p class="text-xs text-slate-400 uppercase tracking-wider">IoT Tide Sensor</p>
                         <p class="text-lg font-bold font-mono-custom text-sky-300 flex items-center">
-                            <span id="global-tide">+1.2</span> m 
-                            <span id="tide-trend-icon"><i class="fa-solid fa-arrow-trend-up text-xs ml-2 text-emerald-400 opacity-70"></i></span>
+                            <span id="global-tide">+1.2</span> m
+                            <span id="tide-trend-icon"><i
+                                    class="fa-solid fa-arrow-trend-up text-xs ml-2 text-emerald-400 opacity-70"></i></span>
                         </p>
                     </div>
                 </div>
@@ -189,8 +228,10 @@
     <!-- Right Side Panel (Dynamic Inspector) -->
     <aside class="w-[420px] bg-slate-900 border-l border-slate-800 flex flex-col z-50 shadow-2xl relative">
         <div class="p-5 border-b border-slate-800 bg-slate-800/20">
-            <h2 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-satellite mr-2 text-sky-400"></i> Vessel Inspector</h2>
-            <p class="text-xs text-slate-400 mt-1">Pilih kapal di peta untuk melihat analitik AI, CCTV, dan kalkulasi DUKC.</p>
+            <h2 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-satellite mr-2 text-sky-400"></i> Vessel
+                Inspector</h2>
+            <p class="text-xs text-slate-400 mt-1">Pilih kapal di peta untuk melihat analitik AI, CCTV, dan kalkulasi
+                DUKC.</p>
         </div>
 
         <div id="inspector-content" class="flex-1 overflow-y-auto p-5 pb-10 flex flex-col gap-6">
@@ -202,96 +243,119 @@
 
             <!-- Detailed State (Hidden by default) -->
             <div id="detail-state" class="hidden flex-col gap-6">
-                
+
                 <!-- 1. Identity (AIS + AI) -->
                 <div>
                     <div class="flex justify-between items-start mb-2">
                         <h3 id="ship-name" class="text-2xl font-bold text-white tracking-wide">MSC FLAVIA</h3>
-                        <span id="ship-status-badge" class="px-2 py-1 rounded text-xs font-bold bg-sky-900/50 text-sky-400 border border-sky-700">APPROACHING</span>
+                        <span id="ship-status-badge"
+                            class="px-2 py-1 rounded text-xs font-bold bg-sky-900/50 text-sky-400 border border-sky-700">APPROACHING</span>
                     </div>
-                    <p class="text-sm text-slate-400 font-mono-custom">IMO: <span id="ship-imo" class="text-slate-200">9467433</span> | Type: <span id="ship-type">Container Ship</span></p>
+                    <p class="text-sm text-slate-400 font-mono-custom">IMO: <span id="ship-imo"
+                            class="text-slate-200">9467433</span> | Type: <span id="ship-type">Container Ship</span></p>
                 </div>
 
                 <!-- 2. AI CCTV Integration -->
                 <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
                     <div class="px-3 py-2 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
-                        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-video mr-1"></i> Smart CCTV Feed</span>
-                        <span class="text-[10px] bg-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 animate-pulse"><i class="fa-solid fa-circle text-[8px] mr-1"></i>LIVE REC</span>
+                        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider"><i
+                                class="fa-solid fa-video mr-1"></i> Smart CCTV Feed</span>
+                        <span
+                            class="text-[10px] bg-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 animate-pulse"><i
+                                class="fa-solid fa-circle text-[8px] mr-1"></i>LIVE REC</span>
                     </div>
                     <div class="relative h-40 bg-black flex items-center justify-center overflow-hidden">
                         <!-- Dynamic Image -->
-                        <img id="cctv-img" src="https://images.unsplash.com/photo-1586528116311-ad8ed7c66324?q=80&w=2070&auto=format&fit=crop" alt="CCTV Feed" class="object-cover w-full h-full opacity-80 mix-blend-luminosity">
-                        
+                        <img id="cctv-img"
+                            src="https://images.unsplash.com/photo-1586528116311-ad8ed7c66324?q=80&w=2070&auto=format&fit=crop"
+                            alt="CCTV Feed" class="object-cover w-full h-full opacity-80 mix-blend-luminosity">
+
                         <!-- AI Bounding Box Overlay -->
                         <div class="ai-box top-1/3 left-1/4 w-1/2 h-1/4 flex flex-col justify-end p-1">
                             <div class="bg-emerald-500 text-black text-[10px] font-bold px-1 inline-block w-max">
                                 OCR MATCH: <span id="ocr-imo">9467433</span> (100%)
                             </div>
                         </div>
-                        
+
                         <!-- Crosshair UI -->
-                        <div class="absolute inset-0 pointer-events-none" style="background-image: linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        <div class="absolute inset-0 pointer-events-none"
+                            style="background-image: linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px); background-size: 20px 20px;">
+                        </div>
                     </div>
                     <div class="p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-slate-400">AI Validation:</span>
-                            <span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-double mr-1"></i>AIS Confirmed</span>
+                            <span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-double mr-1"></i>AIS
+                                Confirmed</span>
                         </div>
                         <div class="flex items-center justify-between text-sm mt-1">
                             <span class="text-slate-400">Auto-Billing:</span>
-                            <span id="billing-status" class="text-slate-200 font-mono-custom text-xs">Waiting Berthing Event...</span>
+                            <span id="billing-status" class="text-slate-200 font-mono-custom text-xs">Waiting Berthing
+                                Event...</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3. Pilot Tracking (NB-NTN) -->
                 <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-satellite-dish mr-1"></i> NB-NTN Pilot Tracker</h4>
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"><i
+                            class="fa-solid fa-satellite-dish mr-1"></i> NB-NTN Pilot Tracker</h4>
                     <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-sky-500 relative">
+                        <div
+                            class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-sky-500 relative">
                             <i class="fa-solid fa-user-tie text-xl text-slate-300"></i>
-                            <div id="pilot-dot" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-slate-900 bg-sky-400"></div>
+                            <div id="pilot-dot"
+                                class="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-slate-900 bg-sky-400">
+                            </div>
                         </div>
                         <div class="flex-1">
                             <p id="pilot-name" class="font-bold text-slate-200">Capt. Haryanto</p>
-                            <p id="pilot-status" class="text-xs text-sky-400 font-mono-custom mt-0.5">ON BOARD - Lat: -6.082 Lng: 106.881</p>
+                            <p id="pilot-status" class="text-xs text-sky-400 font-mono-custom mt-0.5">ON BOARD - Lat:
+                                -6.082 Lng: 106.881</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- 4. DUKC IoT Integration -->
                 <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4 relative overflow-hidden">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-ruler-combined mr-1"></i> Dynamic Under Keel Clearance</h4>
-                    
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4"><i
+                            class="fa-solid fa-ruler-combined mr-1"></i> Dynamic Under Keel Clearance</h4>
+
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div class="bg-slate-900/80 p-3 rounded border border-slate-700">
                             <p class="text-[10px] text-slate-400 uppercase">Draf Kapal (Tenggelam)</p>
-                            <p class="text-xl font-bold font-mono-custom text-rose-300 mt-1"><span id="calc-draft">14.5</span> <span class="text-sm">m</span></p>
+                            <p class="text-xl font-bold font-mono-custom text-rose-300 mt-1"><span
+                                    id="calc-draft">14.5</span> <span class="text-sm">m</span></p>
                         </div>
                         <div class="bg-slate-900/80 p-3 rounded border border-slate-700">
                             <p class="text-[10px] text-slate-400 uppercase">Kedalaman Alur Aktual</p>
-                            <p class="text-xl font-bold font-mono-custom text-sky-300 mt-1"><span id="calc-actual-depth">15.2</span> <span class="text-sm">m</span></p>
+                            <p class="text-xl font-bold font-mono-custom text-sky-300 mt-1"><span
+                                    id="calc-actual-depth">15.2</span> <span class="text-sm">m</span></p>
                         </div>
                     </div>
 
                     <!-- UKC Result Box -->
-                    <div id="ukc-box" class="p-4 rounded border flex items-center justify-between border-emerald-500/50 bg-emerald-900/20">
+                    <div id="ukc-box"
+                        class="p-4 rounded border flex items-center justify-between border-emerald-500/50 bg-emerald-900/20">
                         <div>
                             <p class="text-xs uppercase font-bold text-slate-300 mb-1">Status UKC (Jarak Sisa)</p>
                             <p id="ukc-status-text" class="text-sm font-bold text-emerald-400">AMAN DILALUI</p>
                         </div>
                         <div class="text-right">
-                            <p id="calc-ukc" class="text-3xl font-bold font-mono-custom text-emerald-400">0.7 <span class="text-base font-normal">m</span></p>
+                            <p id="calc-ukc" class="text-3xl font-bold font-mono-custom text-emerald-400">0.7 <span
+                                    class="text-base font-normal">m</span></p>
                         </div>
                     </div>
 
                     <!-- Formula Reference -->
-                    <p class="text-[10px] text-slate-500 mt-3 font-mono-custom text-center">UKC = (Chart Datum + IoT Tide) - Ship Draft</p>
+                    <p class="text-[10px] text-slate-500 mt-3 font-mono-custom text-center">UKC = (Chart Datum + IoT
+                        Tide) - Ship Draft</p>
                 </div>
 
                 <!-- 5. Audit Log / Timeline (NEW SECTION) -->
                 <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-list-check mr-1"></i> Log Aktivitas Otomatis</h4>
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4"><i
+                            class="fa-solid fa-list-check mr-1"></i> Log Aktivitas Otomatis</h4>
                     <div id="ship-log-timeline" class="relative border-l border-slate-700 ml-3 flex flex-col gap-5">
                         <!-- Logs will be injected here via JS -->
                     </div>
@@ -303,7 +367,7 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <!-- Application Logic -->
     <script>
         // --- 1. CONFIGURATION & STATE ---
@@ -315,16 +379,16 @@
 
         // Realistic Ship Data
         const ships = [
-            { 
-                id: 1, 
-                name: 'MSC FLAVIA', 
-                imo: '9467433', 
-                type: 'Container Ship (Neo-Panamax)', 
+            {
+                id: 1,
+                name: 'MSC FLAVIA',
+                imo: '9467433',
+                type: 'Container Ship (Neo-Panamax)',
                 draft: 14.8, // Very deep, will trigger DANGER or WARNING depending on tide
-                lat: -6.0750, 
-                lng: 106.8800, 
-                status: 'APPROACHING', 
-                pilot: 'Capt. Haryanto', 
+                lat: -6.0750,
+                lng: 106.8800,
+                status: 'APPROACHING',
+                pilot: 'Capt. Haryanto',
                 pilotStatus: 'ON BOARD (NB-NTN Active)',
                 pilotDotColor: 'bg-emerald-400',
                 cctvImg: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?q=80&w=600&auto=format&fit=crop', // Container ship photo
@@ -333,16 +397,16 @@
                     { time: '14:30 WIB', title: 'Pandu Naik (Start Billing)', desc: 'Tracker NB-NTN mendeteksi Capt. Haryanto naik ke atas kapal. Agro Pandu aktif.', icon: 'fa-user-check', color: 'text-sky-400' }
                 ]
             },
-            { 
-                id: 2, 
-                name: 'MT. GAMSUNORO', 
-                imo: '9677222', 
-                type: 'Oil/Chemical Tanker', 
+            {
+                id: 2,
+                name: 'MT. GAMSUNORO',
+                imo: '9677222',
+                type: 'Oil/Chemical Tanker',
                 draft: 10.5, // Safe draft
-                lat: -6.1015, 
-                lng: 106.8885, 
-                status: 'BERTHING', 
-                pilot: 'Capt. Sudirman', 
+                lat: -6.1015,
+                lng: 106.8885,
+                status: 'BERTHING',
+                pilot: 'Capt. Sudirman',
                 pilotStatus: 'DISEMBARKED (Stop Billing Sent)',
                 pilotDotColor: 'bg-slate-500',
                 cctvImg: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop', // Tanker photo
@@ -353,16 +417,16 @@
                     { time: '12:10 WIB', title: 'Pandu Turun (Stop Billing)', desc: 'Pandu kembali ke Pilot Boat (NB-NTN disconnected). Invoice Pandu otomatis terbit ke ERP.', icon: 'fa-file-invoice-dollar', color: 'text-amber-400' }
                 ]
             },
-            { 
-                id: 3, 
-                name: 'KOTA INTAN', 
-                imo: '9167382', 
-                type: 'General Cargo', 
-                draft: 12.2, 
-                lat: -6.0600, 
-                lng: 106.8950, 
-                status: 'AT ANCHOR', 
-                pilot: 'Assigning...', 
+            {
+                id: 3,
+                name: 'KOTA INTAN',
+                imo: '9167382',
+                type: 'General Cargo',
+                draft: 12.2,
+                lat: -6.0600,
+                lng: 106.8950,
+                status: 'AT ANCHOR',
+                pilot: 'Assigning...',
                 pilotStatus: 'STANDBY (Boat En Route)',
                 pilotDotColor: 'bg-rose-500',
                 cctvImg: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=600&auto=format&fit=crop', // General cargo photo
@@ -403,7 +467,7 @@
             weight: 1,
             dashArray: '5, 5'
         }).addTo(map);
-        
+
         // Add a marker for the Tide Sensor location
         L.circleMarker([-6.090, 106.885], {
             radius: 4,
@@ -412,7 +476,7 @@
             weight: 1,
             opacity: 1,
             fillOpacity: 0.8
-        }).addTo(map).bindTooltip("IoT Tide Sensor Node 1", {direction: 'top'});
+        }).addTo(map).bindTooltip("IoT Tide Sensor Node 1", { direction: 'top' });
 
         // --- 3. RENDER SHIP MARKERS ---
         const markers = {};
@@ -438,7 +502,7 @@
                 });
 
                 const marker = L.marker([ship.lat, ship.lng], { icon }).addTo(map);
-                
+
                 marker.on('click', () => {
                     selectShip(ship.id);
                 });
@@ -451,7 +515,7 @@
         function selectShip(id) {
             // Update UI State
             selectedShipId = id;
-            
+
             // Remove 'selected' class from all markers
             document.querySelectorAll('.custom-ship-marker').forEach(el => el.classList.remove('selected'));
             // Add 'selected' to clicked
@@ -460,7 +524,7 @@
 
             // Find ship data
             const ship = ships.find(s => s.id === id);
-            
+
             // Toggle side panels
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('detail-state').classList.remove('hidden');
@@ -471,10 +535,10 @@
             document.getElementById('ship-imo').innerText = ship.imo;
             document.getElementById('ocr-imo').innerText = ship.imo; // AI OCR matches IMO
             document.getElementById('ship-type').innerText = ship.type;
-            
+
             const statusBadge = document.getElementById('ship-status-badge');
             statusBadge.innerText = ship.status;
-            if(ship.status === 'BERTHING') {
+            if (ship.status === 'BERTHING') {
                 statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-emerald-900/50 text-emerald-400 border border-emerald-700';
             } else {
                 statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-sky-900/50 text-sky-400 border border-sky-700';
@@ -490,7 +554,7 @@
             // Render Logs Timeline
             const logContainer = document.getElementById('ship-log-timeline');
             logContainer.innerHTML = ''; // Bersihkan log sebelumnya
-            
+
             if (ship.logs && ship.logs.length > 0) {
                 // Render dari log terlama (atas) ke terbaru (bawah)
                 ship.logs.forEach(log => {
@@ -568,7 +632,7 @@
                 // Change tide by a small random amount between -0.05 and +0.05
                 const change = (Math.random() * 0.1) - 0.05;
                 currentTide += change;
-                
+
                 // Keep within realistic Priok bounds
                 if (currentTide > 2.0) currentTide = 2.0;
                 if (currentTide < -0.5) currentTide = -0.5;
@@ -576,10 +640,10 @@
                 // Update Header UI
                 const trendIcon = change >= 0 ? '<i class="fa-solid fa-arrow-trend-up text-xs ml-2 text-emerald-400"></i>' : '<i class="fa-solid fa-arrow-trend-down text-xs ml-2 text-rose-400"></i>';
                 let sign = currentTide >= 0 ? '+' : '';
-                
+
                 const tideEl = document.getElementById('global-tide');
                 const trendEl = document.getElementById('tide-trend-icon');
-                
+
                 if (tideEl) tideEl.innerHTML = `${sign}${currentTide.toFixed(2)}`;
                 if (trendEl) trendEl.innerHTML = trendIcon;
 
@@ -609,4 +673,5 @@
 
     </script>
 </body>
+
 </html>
