@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Port Control Center - Tanjung Priok</title>
+    
+    <!-- Tailwind CSS for rapid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: 'Urbanist', sans-serif;
+            background-color: #040814; /* Deep dark blue background */
+            color: #F8FAFC;
+        }
+
+        .font-mono-custom {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+
+        /* Map styling to fit dark theme */
+        #map {
+            background-color: #040814;
+        }
+        
+        .leaflet-container .leaflet-control-attribution {
+            background: rgba(0, 0, 0, 0.7);
+            color: #cbd5e1;
+        }
+        .leaflet-container .leaflet-control-attribution a {
+            color: #38bdf8;
+        }
+
+        /* Custom Map Marker Styling */
+        .custom-ship-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background-color: rgba(15, 23, 42, 0.8);
+            border: 2px solid #38bdf8; /* Neon Blue default */
+            border-radius: 50%;
+            color: #38bdf8;
+            font-size: 14px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .custom-ship-marker.warning {
+            border-color: #f59e0b;
+            color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        .custom-ship-marker.danger {
+            border-color: #ef4444;
+            color: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            animation: pulse-danger 1.5s infinite;
+        }
+        
+        .custom-ship-marker:hover, .custom-ship-marker.selected {
+            transform: scale(1.2);
+            background-color: #38bdf8;
+            color: #040814;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.8);
+        }
+
+        @keyframes pulse-danger {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* AI Bounding Box Animation */
+        .ai-box {
+            position: absolute;
+            border: 2px solid #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+            background: rgba(16, 185, 129, 0.1);
+            animation: scan 2s infinite alternate;
+        }
+
+        @keyframes scan {
+            0% { opacity: 0.5; transform: scale(0.98); }
+            100% { opacity: 1; transform: scale(1.02); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex overflow-hidden selection:bg-sky-500/30">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-20 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-6 gap-8 z-50">
+        <div class="text-sky-400 text-3xl font-bold cursor-pointer hover:scale-110 transition-transform">
+            <i class="fa-solid fa-anchor"></i>
+        </div>
+        <nav class="flex flex-col gap-6 w-full">
+            <button class="w-full py-3 text-sky-400 border-r-2 border-sky-400 bg-slate-800/50 relative group">
+                <i class="fa-solid fa-satellite-dish text-xl"></i>
+                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Live Map</span>
+            </button>
+            <button class="w-full py-3 text-slate-400 hover:text-sky-300 transition-colors relative group">
+                <i class="fa-solid fa-video text-xl"></i>
+                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">CCTV & AI</span>
+            </button>
+            <button class="w-full py-3 text-slate-400 hover:text-sky-300 transition-colors relative group">
+                <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
+                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Auto Billing</span>
+            </button>
+            <button class="w-full py-3 text-slate-400 hover:text-sky-300 transition-colors relative group">
+                <i class="fa-solid fa-user-astronaut text-xl"></i>
+                <span class="absolute left-14 bg-slate-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-700">Pilot Tracker</span>
+            </button>
+        </nav>
+        <div class="mt-auto">
+            <button class="w-full py-3 text-slate-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-gear text-xl"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col relative">
+        <!-- Top Header Overlay (Absolute over map) -->
+        <header class="absolute top-4 left-4 right-4 z-[400] flex justify-between items-start pointer-events-none">
+            <!-- Port Info -->
+            <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-4 rounded-xl shadow-lg pointer-events-auto">
+                <h1 class="text-2xl font-bold text-white tracking-wide">Tanjung Priok <span class="text-sky-400 font-light">Control Center</span></h1>
+                <p class="text-sm text-slate-400 mt-1"><i class="fa-solid fa-location-dot mr-2"></i>Jakarta, ID | <span class="font-mono-custom text-emerald-400 text-xs">SYS_ONLINE</span></p>
+            </div>
+
+            <!-- Global IoT Metrics -->
+            <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-3 rounded-xl shadow-lg flex gap-6 pointer-events-auto">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-sky-900/50 flex items-center justify-center text-sky-400">
+                        <i class="fa-solid fa-water"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">IoT Tide Sensor</p>
+                        <p class="text-lg font-bold font-mono-custom text-sky-300 flex items-center">
+                            <span id="global-tide">+1.2</span> m 
+                            <span id="tide-trend-icon"><i class="fa-solid fa-arrow-trend-up text-xs ml-2 text-emerald-400 opacity-70"></i></span>
+                        </p>
+                    </div>
+                </div>
+                <div class="w-px bg-slate-700"></div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300">
+                        <i class="fa-solid fa-wind"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">Wind Spd</p>
+                        <p class="text-lg font-bold font-mono-custom text-slate-200">12 kts</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- The Map -->
+        <div id="map" class="w-full h-full z-0"></div>
+    </main>
+
+    <!-- Right Side Panel (Dynamic Inspector) -->
+    <aside class="w-[420px] bg-slate-900 border-l border-slate-800 flex flex-col z-50 shadow-2xl relative">
+        <div class="p-5 border-b border-slate-800 bg-slate-800/20">
+            <h2 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-satellite mr-2 text-sky-400"></i> Vessel Inspector</h2>
+            <p class="text-xs text-slate-400 mt-1">Pilih kapal di peta untuk melihat analitik AI, CCTV, dan kalkulasi DUKC.</p>
+        </div>
+
+        <div id="inspector-content" class="flex-1 overflow-y-auto p-5 pb-10 flex flex-col gap-6">
+            <!-- Initial State (No Ship Selected) -->
+            <div id="empty-state" class="flex flex-col items-center justify-center h-full text-center opacity-50 pt-20">
+                <i class="fa-solid fa-ship text-6xl mb-4 text-slate-600"></i>
+                <p class="text-slate-400">Menunggu seleksi target...</p>
+            </div>
+
+            <!-- Detailed State (Hidden by default) -->
+            <div id="detail-state" class="hidden flex-col gap-6">
+                
+                <!-- 1. Identity (AIS + AI) -->
+                <div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 id="ship-name" class="text-2xl font-bold text-white tracking-wide">MSC FLAVIA</h3>
+                        <span id="ship-status-badge" class="px-2 py-1 rounded text-xs font-bold bg-sky-900/50 text-sky-400 border border-sky-700">APPROACHING</span>
+                    </div>
+                    <p class="text-sm text-slate-400 font-mono-custom">IMO: <span id="ship-imo" class="text-slate-200">9467433</span> | Type: <span id="ship-type">Container Ship</span></p>
+                </div>
+
+                <!-- 2. AI CCTV Integration -->
+                <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <div class="px-3 py-2 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-video mr-1"></i> Smart CCTV Feed</span>
+                        <span class="text-[10px] bg-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 animate-pulse"><i class="fa-solid fa-circle text-[8px] mr-1"></i>LIVE REC</span>
+                    </div>
+                    <div class="relative h-40 bg-black flex items-center justify-center overflow-hidden">
+                        <!-- Dynamic Image -->
+                        <img id="cctv-img" src="https://images.unsplash.com/photo-1586528116311-ad8ed7c66324?q=80&w=2070&auto=format&fit=crop" alt="CCTV Feed" class="object-cover w-full h-full opacity-80 mix-blend-luminosity">
+                        
+                        <!-- AI Bounding Box Overlay -->
+                        <div class="ai-box top-1/3 left-1/4 w-1/2 h-1/4 flex flex-col justify-end p-1">
+                            <div class="bg-emerald-500 text-black text-[10px] font-bold px-1 inline-block w-max">
+                                OCR MATCH: <span id="ocr-imo">9467433</span> (100%)
+                            </div>
+                        </div>
+                        
+                        <!-- Crosshair UI -->
+                        <div class="absolute inset-0 pointer-events-none" style="background-image: linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                    </div>
+                    <div class="p-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-400">AI Validation:</span>
+                            <span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-double mr-1"></i>AIS Confirmed</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm mt-1">
+                            <span class="text-slate-400">Auto-Billing:</span>
+                            <span id="billing-status" class="text-slate-200 font-mono-custom text-xs">Waiting Berthing Event...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Pilot Tracking (NB-NTN) -->
+                <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-satellite-dish mr-1"></i> NB-NTN Pilot Tracker</h4>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-sky-500 relative">
+                            <i class="fa-solid fa-user-tie text-xl text-slate-300"></i>
+                            <div id="pilot-dot" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-slate-900 bg-sky-400"></div>
+                        </div>
+                        <div class="flex-1">
+                            <p id="pilot-name" class="font-bold text-slate-200">Capt. Haryanto</p>
+                            <p id="pilot-status" class="text-xs text-sky-400 font-mono-custom mt-0.5">ON BOARD - Lat: -6.082 Lng: 106.881</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. DUKC IoT Integration -->
+                <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4 relative overflow-hidden">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-ruler-combined mr-1"></i> Dynamic Under Keel Clearance</h4>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-900/80 p-3 rounded border border-slate-700">
+                            <p class="text-[10px] text-slate-400 uppercase">Draf Kapal (Tenggelam)</p>
+                            <p class="text-xl font-bold font-mono-custom text-rose-300 mt-1"><span id="calc-draft">14.5</span> <span class="text-sm">m</span></p>
+                        </div>
+                        <div class="bg-slate-900/80 p-3 rounded border border-slate-700">
+                            <p class="text-[10px] text-slate-400 uppercase">Kedalaman Alur Aktual</p>
+                            <p class="text-xl font-bold font-mono-custom text-sky-300 mt-1"><span id="calc-actual-depth">15.2</span> <span class="text-sm">m</span></p>
+                        </div>
+                    </div>
+
+                    <!-- UKC Result Box -->
+                    <div id="ukc-box" class="p-4 rounded border flex items-center justify-between border-emerald-500/50 bg-emerald-900/20">
+                        <div>
+                            <p class="text-xs uppercase font-bold text-slate-300 mb-1">Status UKC (Jarak Sisa)</p>
+                            <p id="ukc-status-text" class="text-sm font-bold text-emerald-400">AMAN DILALUI</p>
+                        </div>
+                        <div class="text-right">
+                            <p id="calc-ukc" class="text-3xl font-bold font-mono-custom text-emerald-400">0.7 <span class="text-base font-normal">m</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Formula Reference -->
+                    <p class="text-[10px] text-slate-500 mt-3 font-mono-custom text-center">UKC = (Chart Datum + IoT Tide) - Ship Draft</p>
+                </div>
+
+                <!-- 5. Audit Log / Timeline (NEW SECTION) -->
+                <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-list-check mr-1"></i> Log Aktivitas Otomatis</h4>
+                    <div id="ship-log-timeline" class="relative border-l border-slate-700 ml-3 flex flex-col gap-5">
+                        <!-- Logs will be injected here via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </aside>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Application Logic -->
+    <script>
+        // --- 1. CONFIGURATION & STATE ---
+        const PORT_LAT = -6.1025;
+        const PORT_LNG = 106.8825;
+        const CHART_DATUM = 14.0; // Base depth of Priok channel in meters
+        let currentTide = 1.2;    // Simulated live IoT tide data
+        let selectedShipId = null;
+
+        // Realistic Ship Data
+        const ships = [
+            { 
+                id: 1, 
+                name: 'MSC FLAVIA', 
+                imo: '9467433', 
+                type: 'Container Ship (Neo-Panamax)', 
+                draft: 14.8, // Very deep, will trigger DANGER or WARNING depending on tide
+                lat: -6.0750, 
+                lng: 106.8800, 
+                status: 'APPROACHING', 
+                pilot: 'Capt. Haryanto', 
+                pilotStatus: 'ON BOARD (NB-NTN Active)',
+                pilotDotColor: 'bg-emerald-400',
+                cctvImg: 'https://images.unsplash.com/photo-1586528116311-ad8ed7c66324?q=80&w=600&auto=format&fit=crop', // Container ship photo
+                billingWait: 'Waiting Berthing Event...',
+                logs: [
+                    { time: '14:30 WIB', title: 'Pandu Naik (Start Billing)', desc: 'Tracker NB-NTN mendeteksi Capt. Haryanto naik ke atas kapal. Agro Pandu aktif.', icon: 'fa-user-check', color: 'text-sky-400' }
+                ]
+            },
+            { 
+                id: 2, 
+                name: 'MT. GAMSUNORO', 
+                imo: '9677222', 
+                type: 'Oil/Chemical Tanker', 
+                draft: 10.5, // Safe draft
+                lat: -6.1015, 
+                lng: 106.8885, 
+                status: 'BERTHING', 
+                pilot: 'Capt. Sudirman', 
+                pilotStatus: 'DISEMBARKED (Stop Billing Sent)',
+                pilotDotColor: 'bg-slate-500',
+                cctvImg: 'https://images.unsplash.com/photo-1605335198083-d5ceb6379532?q=80&w=600&auto=format&fit=crop', // Tanker photo
+                billingWait: 'INVOICE GENERATED (ERP)',
+                logs: [
+                    { time: '09:15 WIB', title: 'Pandu Naik (Start Billing)', desc: 'Tracker NB-NTN mendeteksi Capt. Sudirman naik ke atas kapal. Agro Pandu aktif.', icon: 'fa-user-check', color: 'text-sky-400' },
+                    { time: '11:45 WIB', title: 'Kapal Tambat', desc: 'AI dan CCTV memvalidasi kapal sandar & tali terikat. Agro Pelabuhan aktif.', icon: 'fa-anchor', color: 'text-emerald-400' },
+                    { time: '12:10 WIB', title: 'Pandu Turun (Stop Billing)', desc: 'Pandu kembali ke Pilot Boat (NB-NTN disconnected). Invoice Pandu otomatis terbit ke ERP.', icon: 'fa-file-invoice-dollar', color: 'text-amber-400' }
+                ]
+            },
+            { 
+                id: 3, 
+                name: 'KOTA INTAN', 
+                imo: '9167382', 
+                type: 'General Cargo', 
+                draft: 12.2, 
+                lat: -6.0600, 
+                lng: 106.8950, 
+                status: 'AT ANCHOR', 
+                pilot: 'Assigning...', 
+                pilotStatus: 'STANDBY (Boat En Route)',
+                pilotDotColor: 'bg-rose-500',
+                cctvImg: 'https://images.unsplash.com/photo-1502933691298-84fa145f047a?q=80&w=600&auto=format&fit=crop', // General cargo photo
+                billingWait: 'Waiting Start Billing...',
+                logs: [
+                    { time: '16:00 WIB', title: 'Permintaan Pandu', desc: 'Sistem mengalokasikan Pilot Boat. Menunggu petugas Pandu merapat ke titik PBG.', icon: 'fa-clock', color: 'text-slate-400' }
+                ]
+            }
+        ];
+
+        // --- 2. INIT MAP ---
+        // Dark theme map tiles (CartoDB Dark Matter)
+        const map = L.map('map', {
+            center: [PORT_LAT, PORT_LNG],
+            zoom: 13,
+            zoomControl: false // Customizing position later if needed
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+        // Add Port Infrastructure visual guides (rough polygon for context)
+        const terminalBounds = [
+            [-6.095, 106.875],
+            [-6.095, 106.895],
+            [-6.115, 106.895],
+            [-6.115, 106.875]
+        ];
+        L.polygon(terminalBounds, {
+            color: '#38bdf8',
+            fillColor: '#0f172a',
+            fillOpacity: 0.3,
+            weight: 1,
+            dashArray: '5, 5'
+        }).addTo(map);
+        
+        // Add a marker for the Tide Sensor location
+        L.circleMarker([-6.090, 106.885], {
+            radius: 4,
+            fillColor: "#10b981",
+            color: "#fff",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map).bindTooltip("IoT Tide Sensor Node 1", {direction: 'top'});
+
+        // --- 3. RENDER SHIP MARKERS ---
+        const markers = {};
+
+        function getMarkerColor(ukc) {
+            if (ukc < 0) return 'danger'; // Grounded
+            if (ukc < 1.0) return 'warning'; // Warning margin
+            return ''; // Normal/Safe
+        }
+
+        function createMarkers() {
+            ships.forEach(ship => {
+                // Calculate initial UKC just for marker coloring
+                const actualDepth = CHART_DATUM + currentTide;
+                const ukc = actualDepth - ship.draft;
+                const statusClass = getMarkerColor(ukc);
+
+                const icon = L.divIcon({
+                    className: '', // Clear default
+                    html: `<div class="custom-ship-marker ${statusClass}" id="marker-${ship.id}"><i class="fa-solid fa-ship"></i></div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+
+                const marker = L.marker([ship.lat, ship.lng], { icon }).addTo(map);
+                
+                marker.on('click', () => {
+                    selectShip(ship.id);
+                });
+
+                markers[ship.id] = marker;
+            });
+        }
+
+        // --- 4. INTERACTION LOGIC ---
+        function selectShip(id) {
+            // Update UI State
+            selectedShipId = id;
+            
+            // Remove 'selected' class from all markers
+            document.querySelectorAll('.custom-ship-marker').forEach(el => el.classList.remove('selected'));
+            // Add 'selected' to clicked
+            const selectedEl = document.getElementById(`marker-${id}`);
+            if (selectedEl) selectedEl.classList.add('selected');
+
+            // Find ship data
+            const ship = ships.find(s => s.id === id);
+            
+            // Toggle side panels
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('detail-state').classList.remove('hidden');
+            document.getElementById('detail-state').classList.add('flex');
+
+            // Populate data
+            document.getElementById('ship-name').innerText = ship.name;
+            document.getElementById('ship-imo').innerText = ship.imo;
+            document.getElementById('ocr-imo').innerText = ship.imo; // AI OCR matches IMO
+            document.getElementById('ship-type').innerText = ship.type;
+            
+            const statusBadge = document.getElementById('ship-status-badge');
+            statusBadge.innerText = ship.status;
+            if(ship.status === 'BERTHING') {
+                statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-emerald-900/50 text-emerald-400 border border-emerald-700';
+            } else {
+                statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-sky-900/50 text-sky-400 border border-sky-700';
+            }
+
+            document.getElementById('cctv-img').src = ship.cctvImg;
+            document.getElementById('billing-status').innerText = ship.billingWait;
+
+            document.getElementById('pilot-name').innerText = ship.pilot;
+            document.getElementById('pilot-status').innerText = ship.pilotStatus;
+            document.getElementById('pilot-dot').className = `absolute bottom-0 right-0 w-3 h-3 rounded-full border border-slate-900 ${ship.pilotDotColor}`;
+
+            // Render Logs Timeline
+            const logContainer = document.getElementById('ship-log-timeline');
+            logContainer.innerHTML = ''; // Bersihkan log sebelumnya
+            
+            if (ship.logs && ship.logs.length > 0) {
+                // Render dari log terlama (atas) ke terbaru (bawah)
+                ship.logs.forEach(log => {
+                    const logHtml = `
+                        <div class="pl-6 relative">
+                            <!-- Titik Timeline -->
+                            <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center">
+                                <i class="fa-solid fa-circle text-[8px] ${log.color}"></i>
+                            </div>
+                            <!-- Konten Log -->
+                            <p class="text-[10px] text-slate-400 font-mono-custom mb-0.5">${log.time}</p>
+                            <p class="text-sm font-bold text-slate-200"><i class="fa-solid ${log.icon} mr-1 ${log.color}"></i> ${log.title}</p>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">${log.desc}</p>
+                        </div>
+                    `;
+                    logContainer.innerHTML += logHtml;
+                });
+            } else {
+                logContainer.innerHTML = '<p class="text-xs text-slate-500 pl-4">Belum ada aktivitas tercatat.</p>';
+            }
+
+            // Calculate UKC dynamically
+            updateUKC(ship);
+        }
+
+        function updateUKC(ship) {
+            if (!ship) return;
+
+            const draft = ship.draft;
+            const actualDepth = CHART_DATUM + currentTide;
+            const ukc = actualDepth - draft;
+
+            document.getElementById('calc-draft').innerText = draft.toFixed(1);
+            document.getElementById('calc-actual-depth').innerText = actualDepth.toFixed(1);
+            document.getElementById('calc-ukc').innerHTML = `${ukc.toFixed(1)} <span class="text-base font-normal">m</span>`;
+
+            const ukcBox = document.getElementById('ukc-box');
+            const ukcStatusText = document.getElementById('ukc-status-text');
+            const ukcValueText = document.getElementById('calc-ukc');
+
+            // Logic Status
+            if (ukc < 0) {
+                // DANGER - GROUNDED
+                ukcBox.className = "p-4 rounded border flex items-center justify-between border-rose-500/50 bg-rose-900/30 animate-pulse";
+                ukcStatusText.innerText = "BAHAYA KANDAS!";
+                ukcStatusText.className = "text-sm font-bold text-rose-400";
+                ukcValueText.className = "text-3xl font-bold font-mono-custom text-rose-400";
+            } else if (ukc < 1.0) {
+                // WARNING - LOW CLEARANCE
+                ukcBox.className = "p-4 rounded border flex items-center justify-between border-amber-500/50 bg-amber-900/30";
+                ukcStatusText.innerText = "PERINGATAN: UKC TIPIS";
+                ukcStatusText.className = "text-sm font-bold text-amber-400";
+                ukcValueText.className = "text-3xl font-bold font-mono-custom text-amber-400";
+            } else {
+                // SAFE
+                ukcBox.className = "p-4 rounded border flex items-center justify-between border-emerald-500/50 bg-emerald-900/20";
+                ukcStatusText.innerText = "AMAN DILALUI";
+                ukcStatusText.className = "text-sm font-bold text-emerald-400";
+                ukcValueText.className = "text-3xl font-bold font-mono-custom text-emerald-400";
+            }
+
+            // Also update the marker color on the map dynamically
+            const markerEl = document.getElementById(`marker-${ship.id}`);
+            if (markerEl) {
+                markerEl.classList.remove('warning', 'danger');
+                if (ukc < 0) markerEl.classList.add('danger');
+                else if (ukc < 1.0) markerEl.classList.add('warning');
+            }
+        }
+
+        // --- 5. SIMULATE IOT LIVE DATA ---
+        function simulateTide() {
+            // Fluctuate tide between -0.5 and +2.0 randomly over time
+            setInterval(() => {
+                // Change tide by a small random amount between -0.05 and +0.05
+                const change = (Math.random() * 0.1) - 0.05;
+                currentTide += change;
+                
+                // Keep within realistic Priok bounds
+                if (currentTide > 2.0) currentTide = 2.0;
+                if (currentTide < -0.5) currentTide = -0.5;
+
+                // Update Header UI
+                const trendIcon = change >= 0 ? '<i class="fa-solid fa-arrow-trend-up text-xs ml-2 text-emerald-400"></i>' : '<i class="fa-solid fa-arrow-trend-down text-xs ml-2 text-rose-400"></i>';
+                let sign = currentTide >= 0 ? '+' : '';
+                
+                const tideEl = document.getElementById('global-tide');
+                const trendEl = document.getElementById('tide-trend-icon');
+                
+                if (tideEl) tideEl.innerHTML = `${sign}${currentTide.toFixed(2)}`;
+                if (trendEl) trendEl.innerHTML = trendIcon;
+
+                // Re-calculate UKC for the currently selected ship
+                if (selectedShipId) {
+                    const ship = ships.find(s => s.id === selectedShipId);
+                    updateUKC(ship);
+                } else {
+                    // Even if no ship selected, update marker colors in background
+                    ships.forEach(ship => {
+                        const actualDepth = CHART_DATUM + currentTide;
+                        const ukc = actualDepth - ship.draft;
+                        const markerEl = document.getElementById(`marker-${ship.id}`);
+                        if (markerEl) {
+                            markerEl.classList.remove('warning', 'danger');
+                            if (ukc < 0) markerEl.classList.add('danger');
+                            else if (ukc < 1.0) markerEl.classList.add('warning');
+                        }
+                    });
+                }
+            }, 3000); // Update every 3 seconds for demo purposes
+        }
+
+        // Start App
+        createMarkers();
+        simulateTide();
+
+    </script>
+</body>
+</html>
